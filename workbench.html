@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>工作台 · 样板 · 拾页</title>
 <script>try{var t=localStorage.getItem('shiyue_theme');if(t)document.documentElement.dataset.theme=t;}catch(e){}</script>
+<script src="shared/store.js"></script>
 <link rel="stylesheet" href="shared/blocks.css">
 <style>
 /* ===== 工作台专属：学习即搭建。三栏，一屏，不竖滑。 ===== */
@@ -80,7 +81,9 @@
 .empty{color:var(--ink-3);font-size:13px;line-height:1.9;text-align:center;padding:30px 10px}
 .review-item{border:1px solid var(--line);border-left:3px solid var(--amber);border-radius:8px;padding:10px 11px;margin-bottom:8px;font-size:12px;background:var(--card)}
 .review-item b{color:var(--ink)}
-.review-item button{font-size:11px;margin-top:8px;padding:5px 10px;background:var(--accent);color:#fff;border:0;border-radius:6px;cursor:pointer}
+.review-item button{font-size:11px;margin-top:8px;padding:5px 10px;border-radius:6px;cursor:pointer}
+.review-item button.rv-ok{background:var(--accent);color:#fff;border:0}
+.review-item button.rv-no{background:none;color:var(--red);border:1px solid var(--line)}
 .banner{font-size:11px;color:var(--ink-3);background:var(--accent-soft);border-radius:8px;padding:9px 11px;line-height:1.7;margin-bottom:16px}
 </style>
 </head>
@@ -138,7 +141,6 @@
 (function(){
   'use strict';
   var NS='http://www.w3.org/2000/svg';
-  var KEY='shiyue_workbench_v1';
   var DAY=24*60*60*1000;
 
   /* 教材帮 P001 原文，已在 set.html 确认过，一字不改 */
@@ -157,11 +159,8 @@
   var sel=null;
   var levelAns=null;
 
-  function load(){
-    try{var s=JSON.parse(localStorage.getItem(KEY));if(s&&s.nodes)return s;}catch(e){}
-    return {nodes:[]};
-  }
-  function save(){try{localStorage.setItem(KEY,JSON.stringify(state));}catch(e){}}
+  function load(){ return window.ShiyueStore.load(); }
+  function save(){ window.ShiyueStore.save(state); }
   function byId(id){for(var i=0;i<state.nodes.length;i++)if(state.nodes[i].id===id)return state.nodes[i];return null;}
 
   /* ---------- 左栏：原文卡 ---------- */
@@ -269,8 +268,12 @@
         '<div class="qh">选一个已有节点，再用一句话说清关系。说不出理由，这条线就是红的。</div>'+
         '<select id="qRel">'+opts+'</select>'+
         '<textarea id="qWhy" placeholder="例如：这条定义了元素和集合，是知道 a∈A 的前提" style="margin-top:8px">'+(''+n.why).replace(/</g,'&lt;')+'</textarea></div>'+
+      '<div class="qbox"><div class="qt">问 2.5 · 合上书，用你自己的话讲一遍</div>'+
+        '<div class="qh">这是隔天回访要拿来问你的原话——必须是你自己说的，不许抄书。至少写一句完整的话。</div>'+
+        '<textarea id="qWords" placeholder="例如：集合只认装了谁，不认写成啥样" style="min-height:64px">'+(''+n.words).replace(/</g,'&lt;')+'</textarea>'+
+        '<div class="qh" style="margin-top:8px;border-top:1px dashed var(--line);padding-top:8px">讲给自己听的三层：<b>凭什么</b> → 举个<b>例子</b> → 举个<b>反例</b>。三层都答得出，才配点「真懂」。</div></div>'+
       '<div class="qbox"><div class="qt">问 3 · 真懂，还是只记个名字？</div>'+
-        '<div class="qh">诚实选。选真懂就得讲出理由，讲不出我给你标红。</div>'+
+        '<div class="qh">诚实选。选真懂，得有上面那句你自己的话——没有就点不亮。</div>'+
         '<div class="pick"><button type="button" data-v="bright" class="'+(levelAns==='bright'?'on':'')+'">真懂了</button>'+
         '<button type="button" data-v="yellow" class="'+(levelAns==='yellow'?'on':'')+'">只记名字</button></div>'+
         '<button class="savebtn" id="qSave" type="button">保存这一块</button>'+
@@ -279,10 +282,11 @@
     box.querySelectorAll('.pick button').forEach(function(b){
       b.addEventListener('click',function(){
         /* 重绘前先把已填内容存回节点，否则点「真懂」会清空前面填的名字和理由 */
-        var ni=document.getElementById('qName'), ri=document.getElementById('qRel'), wi=document.getElementById('qWhy');
+        var ni=document.getElementById('qName'), ri=document.getElementById('qRel'), wi=document.getElementById('qWhy'), oi=document.getElementById('qWords');
         if(ni) n.name=ni.value.trim();
         if(ri) n.relTo=ri.value;
         if(wi) n.why=wi.value.trim();
+        if(oi) n.words=oi.value.trim();
         levelAns=(levelAns===b.dataset.v?null:b.dataset.v);
         renderAsk();
       });
@@ -291,9 +295,12 @@
       var name=document.getElementById('qName').value.trim();
       var rel=document.getElementById('qRel').value;
       var why=document.getElementById('qWhy').value.trim();
+      var words=document.getElementById('qWords').value.trim();
       if(!name){alert('先给这块起个名字——说不出它叫什么，就是还没拆明白。');return;}
       if(rel&&!why){alert('选了跟谁有关，就得讲出「凭什么」。讲不出，先回书里看看。');return;}
-      n.name=name;n.relTo=rel;n.why=why;
+      // 核心：选「真懂」必须有自己的原话，且不是照抄原文。这是隔天回访的弹药。
+      if(levelAns==='bright'&&words.length<8){alert('选「真懂」之前，先合上书用你自己的话写一句（至少 8 个字）。\n抄原文不算——隔天我要拿这句话反过来问你。');return;}
+      n.name=name;n.relTo=rel;n.why=why;n.words=words;
       if(levelAns==='bright'&&rel&&!why){n.level='red';}
       else if(levelAns==='bright'){n.level='bright';n.masteredAt=(n.masteredAt||Date.now());}
       else if(levelAns==='yellow'){n.level='yellow';}
@@ -315,14 +322,17 @@
     box.innerHTML='';
     due.forEach(function(n){
       var d=document.createElement('div');d.className='review-item';
-      d.innerHTML='<b>'+n.name+'</b><br><span style="color:var(--ink-3)">隔天了，重讲一遍还讲得出吗？</span><br>'+
-        '<button type="button">重讲</button>';
-      d.querySelector('button').addEventListener('click',function(){
-        if(confirm('不看画布，用自己的话讲清「'+n.name+'」。\n\n讲得出来点确定，讲不出点取消（退回重建）。')){
-          n.masteredAt=Date.now();save();renderAll();
-        }else{
-          n.level='red';n.masteredAt=0;save();select(n.id);
-        }
+      var quote=n.words?('「'+n.words+'」'):'（这块当时没留下原话——那就不算真懂）';
+      d.innerHTML='<b>'+n.name+'</b><br>'+
+        '<div style="font-size:11px;color:var(--ink-3);margin:6px 0;line-height:1.6">你当时说：'+quote+'</div>'+
+        '<span style="color:var(--ink-3)">先别看这句话，合上书自己讲一遍「'+n.name+'」——讲得出才点通过。</span><br>'+
+        '<button type="button" class="rv-ok">讲得出 · 通过</button>'+
+        '<button type="button" class="rv-no" style="background:none;color:var(--red);border:1px solid var(--line);margin-left:6px">讲不出 · 退回</button>';
+      d.querySelector('.rv-ok').addEventListener('click',function(){
+        n.masteredAt=Date.now();save();renderAll();
+      });
+      d.querySelector('.rv-no').addEventListener('click',function(){
+        n.level='red';n.masteredAt=0;save();select(n.id);
       });
       box.appendChild(d);
     });

@@ -8,6 +8,7 @@
 <link rel="stylesheet" href="shared/blocks.css">
 </head>
 <body>
+<script src="shared/store.js"></script>
 <script src="shared/nav.js"></script>
 <script src="shared/userblocks.js"></script>
 <div class="wrap">
@@ -18,11 +19,17 @@
   </header>
   <div class="page-body">
     <section data-block="quiz">
-      <h2>今天要复习的</h2>
-      <p class="ph">（空架子：现在还没有错题。在任意知识点页点「演示：标一道错题」，它就会出现在这里——数据存在本机，不写进 HTML。）</p>
+      <h2>工作台点亮的知识（会到期回访）</h2>
+      <p class="ph">这些是你在工作台亲手拆、写下原话、判「真懂」的块。隔天会拿你自己的话反问你——讲不出就退回重学。</p>
     </section>
 
-    <div id="reviewList" style="margin-top:24px;display:grid;gap:12px"></div>
+    <div id="brightList" style="margin-top:16px;display:grid;gap:10px"></div>
+
+    <section data-block="mistakes" style="margin-top:30px">
+      <h2>错题标记</h2>
+      <p class="ph">在任意知识点页标一道错题，它会出现在这里。</p>
+    </section>
+    <div id="reviewList" style="margin-top:16px;display:grid;gap:12px"></div>
 
     <div class="actions">
       <button class="btn ghost" data-act="export" type="button">导出我的数据（备份）</button>
@@ -36,7 +43,29 @@
 <footer><span>复习队列 · 占位页</span><span>本地运行 · 用户数据存本机</span></footer>
 <script>
 (function(){
-  var d = window.ShiyueUser.load();
+  var all = window.ShiyueStore.load();
+  var DAY = 24*60*60*1000;
+
+  // ① 工作台点亮的块（两套账本现在通了）
+  var bbox = document.getElementById('brightList');
+  var bright = all.nodes.filter(function(x){ return x.level === 'bright'; });
+  if (!bright.length){
+    bbox.innerHTML = '<p class="ph">（还没有点亮的块——去工作台拆一块、写下你的原话）</p>';
+  } else {
+    bright.forEach(function(x){
+      var due = x.masteredAt && (Date.now() - x.masteredAt >= DAY);
+      var el = document.createElement('div');
+      el.className = 'tile'; el.style.minHeight = 'auto';
+      el.innerHTML = '<div class="no">' + (due ? '● 到期该重讲' : '已点亮') + '</div>' +
+        '<div class="d"><b>' + (x.name || '未命名') + '</b>' +
+        (x.words ? '<br>你的原话：「' + x.words + '」' : '') +
+        '</div>';
+      bbox.appendChild(el);
+    });
+  }
+
+  // ② 错题标记
+  var d = all.blocks;
   var box = document.getElementById('reviewList');
   var n = 0;
   Object.keys(d).forEach(function(page){

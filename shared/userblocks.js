@@ -1,22 +1,19 @@
-/* 拾页 · 用户块（占位版）。真实数据存 localStorage，绝不写进 HTML。
-   职责：① 把错题/标记挂到对应 page#block 旁；② 导出/导入备份。 */
+/* 拾页 · 用户块。数据存统一账本 shiyue_v2，绝不写进 HTML。
+   职责：① 把错题/标记挂到对应 page#block 旁；② 导出/导入备份。
+   对外仍叫 window.ShiyueUser，内部改走 ShiyueStore（旧 API 不变）。 */
 (function(){
-  var KEY = 'shiyue_userdata_v1';   // 全局一份，file:// 下 Chrome/Edge 已实测跨目录共享
+  var S = window.ShiyueStore;
 
-  function load(){
-    try { return JSON.parse(localStorage.getItem(KEY) || '{}'); }
-    catch(e){ return {}; }
-  }
-  function save(d){
-    try { localStorage.setItem(KEY, JSON.stringify(d)); return true; }
-    catch(e){ return false; }
+  function load(){ return S.load().blocks; }
+  function save(blocks){
+    var d = S.load(); d.blocks = blocks; return S.save(d);
   }
 
   var page = document.querySelector('article[data-page]');
   var pageId = page ? page.getAttribute('data-page') : '';
   var data = load();
 
-  // ① 在对应块旁挂「我的错题」标记（占位：数据格式见块清单）
+  // ① 在对应块旁挂「我的错题」标记
   if (pageId && data[pageId]){
     Object.keys(data[pageId]).forEach(function(blockId){
       var sec = document.getElementById(blockId);
@@ -40,9 +37,9 @@
   window.ShiyueUser = {
     load: load,
     save: save,
-    key: KEY,
+    key: S.key,
     exportJSON: function(){
-      var blob = new Blob([JSON.stringify(load(), null, 2)], {type:'application/json'});
+      var blob = new Blob([JSON.stringify(S.load(), null, 2)], {type:'application/json'});
       var a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
       a.download = '拾页_我的数据_' + new Date().toISOString().slice(0,10) + '.json';
@@ -54,13 +51,16 @@
       r.onload = function(){
         try {
           var obj = JSON.parse(r.result);
-          save(obj);
+          if (obj && obj.v === 2 && Array.isArray(obj.nodes) && obj.blocks){
+            S.save(obj); // 新格式：整个账本
+          } else {
+            save(obj);  // 旧格式：只是 blocks
+          }
           if (done) done(true, '导入完成');
         } catch(e){ if (done) done(false, '文件读不出来：' + e.message); }
       };
       r.readAsText(file);
     },
-    // 占位：写一个错题标记（演示用，真实交互以后做）
     markDemo: function(){
       if (!pageId) return false;
       var sec = page.querySelector('section[data-block]');
