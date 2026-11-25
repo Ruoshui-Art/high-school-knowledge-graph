@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>复习队列 · 拾页</title>
+<script>try{var t=localStorage.getItem('shiyue_theme');if(t)document.documentElement.dataset.theme=t;}catch(e){}</script>
+<link rel="stylesheet" href="shared/blocks.css">
+</head>
+<body>
+<script src="shared/nav.js"></script>
+<script src="shared/userblocks.js"></script>
+<div class="wrap">
+  <header class="page-head">
+    <div class="crumb"><a href="index.html">首页</a><span>/</span>复习队列</div>
+    <h1>复习队列</h1>
+    <div class="meta">横着的一条线 · 错题从哪一页来都行，隔天回到你面前</div>
+  </header>
+  <div class="page-body">
+    <section data-block="quiz">
+      <h2>今天要复习的</h2>
+      <p class="ph">（空架子：现在还没有错题。在任意知识点页点「演示：标一道错题」，它就会出现在这里——数据存在本机，不写进 HTML。）</p>
+    </section>
+
+    <div id="reviewList" style="margin-top:24px;display:grid;gap:12px"></div>
+
+    <div class="actions">
+      <button class="btn ghost" data-act="export" type="button">导出我的数据（备份）</button>
+      <label class="btn ghost">导入我的数据<input type="file" accept="application/json" data-act="import" style="display:none"></label>
+    </div>
+    <p style="font-size:12px;color:var(--ink-3);margin-top:18px;line-height:1.9">
+      数据存在浏览器本机。清缓存、换浏览器、换电脑前，先点「导出我的数据」存一份 JSON。
+    </p>
+  </div>
+</div>
+<footer><span>复习队列 · 占位页</span><span>本地运行 · 用户数据存本机</span></footer>
+<script>
+(function(){
+  var d = window.ShiyueUser.load();
+  var box = document.getElementById('reviewList');
+  var n = 0;
+  Object.keys(d).forEach(function(page){
+    Object.keys(d[page]).forEach(function(block){
+      n++;
+      var el = document.createElement('div');
+      el.className = 'tile';
+      el.style.minHeight = 'auto';
+      el.innerHTML = '<div class="no">PAGE / ' + page + '</div><div class="d">块：' + block +
+        '<br>次数：' + (d[page][block].times || 1) + '</div>';
+      box.appendChild(el);
+    });
+  });
+  if (n === 0) box.innerHTML = '<p class="ph">（当前没有错题记录）</p>';
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>工作台 · 样板 · 拾页</title>
+<script>try{var t=localStorage.getItem('shiyue_theme');if(t)document.documentElement.dataset.theme=t;}catch(e){}</script>
+<link rel="stylesheet" href="shared/blocks.css">
+<style>
+/* ===== 工作台专属：学习即搭建。三栏，一屏，不竖滑。 ===== */
+.wb-top{max-width:1500px;margin:auto;padding:14px 24px;display:flex;align-items:center;gap:18px;border-bottom:1px solid var(--line)}
+.wb-top .brand{font-size:15px;font-weight:700;color:var(--accent)}
+.wb-top .tag{font-size:11px;color:var(--amber);border:1px solid var(--amber);border-radius:20px;padding:2px 10px}
+.wb-top .spacer{flex:1}
+.wb-top button{font-size:12px;padding:7px 14px;background:var(--card);color:var(--ink-2);border:1px solid var(--line);border-radius:8px;cursor:pointer}
+.wb-top button:hover{border-color:var(--accent);color:var(--accent)}
+.wb-top a{font-size:13px;color:var(--ink-2);text-decoration:none}
+.wb-top a:hover{color:var(--accent)}
+
+.wb{display:grid;grid-template-columns:290px 1fr 330px;gap:0;max-width:1500px;margin:auto;height:calc(100vh - 58px);min-height:620px}
+.wb-col{min-width:0;overflow:auto}
+.wb-left{border-right:1px solid var(--line);padding:20px 18px;background:var(--paper-2)}
+.wb-mid{padding:0;position:relative;background:var(--card)}
+.wb-right{border-left:1px solid var(--line);padding:20px 18px;background:var(--paper-2)}
+
+.col-k{font-size:11px;letter-spacing:.14em;color:var(--accent);font-weight:700;margin-bottom:6px}
+.col-h{font-size:18px;font-weight:700;margin-bottom:8px}
+.col-tip{font-size:12px;color:var(--ink-3);line-height:1.7;margin-bottom:16px}
+
+/* 待拆原文卡 */
+.mat{background:var(--card);border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:9px;
+  padding:11px 12px;margin-bottom:10px;cursor:grab;font-size:12.5px;line-height:1.7;color:var(--ink-2);box-shadow:var(--shadow)}
+.mat:active{cursor:grabbing}
+.mat .src{font-size:10px;color:var(--ink-3);display:block;margin-top:6px}
+.mat.used{opacity:.4;border-left-color:var(--ink-3);cursor:default}
+.mat:hover:not(.used){border-color:var(--accent);color:var(--ink)}
+
+/* 画布 */
+.canvas-wrap{position:absolute;inset:0;overflow:hidden}
+#edges{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+#canvas{position:absolute;inset:0}
+.canvas-hint{position:absolute;left:50%;top:44%;transform:translate(-50%,-50%);text-align:center;color:var(--ink-3);font-size:13px;line-height:2;pointer-events:none}
+.canvas-hint b{display:block;font-size:15px;color:var(--ink-2);margin-bottom:4px}
+.canvas-bar{position:absolute;left:0;right:0;bottom:0;padding:10px 18px;background:var(--card);border-top:1px solid var(--line);
+  font-size:11px;color:var(--ink-3);display:flex;gap:18px;align-items:center;z-index:5}
+.legend{display:inline-flex;align-items:center;gap:5px}
+.legend i{width:9px;height:9px;border-radius:50%;display:inline-block}
+
+/* 节点 */
+.node{position:absolute;width:104px;min-height:44px;transform:translate(-50%,-50%);cursor:grab;
+  background:var(--card);border:2px solid var(--ink-3);border-radius:12px;padding:7px 8px;text-align:center;
+  box-shadow:var(--shadow);user-select:none;transition:box-shadow .15s}
+.node:active{cursor:grabbing}
+.node .nm{font-size:12px;font-weight:700;line-height:1.4;word-break:break-all}
+.node .st{font-size:10px;margin-top:3px;color:var(--ink-3)}
+.node.raw{border-style:dashed;border-color:var(--ink-3)}
+.node.raw .st{color:var(--ink-3)}
+.node.named{border-color:var(--accent)}
+.node.yellow{border-color:var(--amber);background:var(--amber-soft)}
+.node.yellow .st{color:var(--amber)}
+.node.red{border-color:var(--red);background:var(--red-soft)}
+.node.red .st{color:var(--red)}
+.node.bright{border-color:var(--green);background:var(--green-soft);box-shadow:0 0 0 3px rgba(30,122,77,.12)}
+.node.bright .st{color:var(--green)}
+.node.sel{box-shadow:0 0 0 3px var(--accent),var(--shadow)}
+
+/* 三问面板 */
+.qbox{border:1px solid var(--line);border-radius:10px;padding:14px;margin-bottom:14px;background:var(--card);box-shadow:var(--shadow)}
+.qbox .qt{font-size:13px;font-weight:700;margin-bottom:4px}
+.qbox .qh{font-size:11px;color:var(--ink-3);line-height:1.6;margin-bottom:10px}
+.qbox input[type=text],.qbox select,.qbox textarea{width:100%;font-size:13px;padding:8px 10px;border:1px solid var(--line);
+  border-radius:7px;background:var(--paper);color:var(--ink);font-family:var(--sans);box-sizing:border-box}
+.qbox textarea{resize:vertical;min-height:52px;line-height:1.6}
+.pick{display:flex;gap:8px;margin-top:8px}
+.pick button{flex:1;font-size:12px;padding:9px;border:1px solid var(--line);border-radius:8px;background:var(--paper);color:var(--ink-2);cursor:pointer}
+.pick button.on[data-v=bright]{border-color:var(--green);background:var(--green-soft);color:var(--green)}
+.pick button.on[data-v=yellow]{border-color:var(--amber);background:var(--amber-soft);color:var(--amber)}
+.savebtn{width:100%;margin-top:12px;padding:11px;background:var(--accent);color:#fff;border:0;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer}
+.delbtn{width:100%;margin-top:8px;padding:7px;background:none;color:var(--red);border:1px solid var(--line);border-radius:8px;font-size:12px;cursor:pointer}
+.empty{color:var(--ink-3);font-size:13px;line-height:1.9;text-align:center;padding:30px 10px}
+.review-item{border:1px solid var(--line);border-left:3px solid var(--amber);border-radius:8px;padding:10px 11px;margin-bottom:8px;font-size:12px;background:var(--card)}
+.review-item b{color:var(--ink)}
+.review-item button{font-size:11px;margin-top:8px;padding:5px 10px;background:var(--accent);color:#fff;border:0;border-radius:6px;cursor:pointer}
+.banner{font-size:11px;color:var(--ink-3);background:var(--accent-soft);border-radius:8px;padding:9px 11px;line-height:1.7;margin-bottom:16px}
+</style>
+</head>
+<body>
+<div class="wb-top">
+  <span class="brand">拾页 · 工作台</span>
+  <span class="tag">样板</span>
+  <span style="font-size:12px;color:var(--ink-3)">学习即搭建：亲手把这一页拆成节点</span>
+  <span class="spacer"></span>
+  <button id="btnSim" type="button" title="演示隔天效果">模拟隔天</button>
+  <button id="btnExport" type="button">导出数据</button>
+  <a href="index.html">← 返回首页</a>
+</div>
+
+<div class="wb">
+  <!-- 左：待拆原文 -->
+  <div class="wb-col wb-left">
+    <div class="col-k">STEP 1 · 原料</div>
+    <div class="col-h">这一页的原文</div>
+    <div class="col-tip">教材帮 P001，一字未改。把一条卡片<b>拖到中间画布</b>，它就成了你的一个节点——名字、位置、跟谁连，都由你定。</div>
+    <div id="mats"></div>
+  </div>
+
+  <!-- 中：画布 -->
+  <div class="wb-col wb-mid">
+    <div class="canvas-wrap">
+      <svg id="edges"></svg>
+      <div id="canvas"></div>
+      <div class="canvas-hint" id="hint"><b>把左边的原文卡拖进来</b>一块一块拆，亲手摆成一张图</div>
+      <div class="canvas-bar">
+        <span class="legend"><i style="background:var(--ink-3)"></i>灰=没拆</span>
+        <span class="legend"><i style="background:var(--accent)"></i>蓝=起了名</span>
+        <span class="legend"><i style="background:var(--amber)"></i>黄=只记名字</span>
+        <span class="legend"><i style="background:var(--red)"></i>红=理由没讲出</span>
+        <span class="legend"><i style="background:var(--green)"></i>绿=真懂了</span>
+        <span class="spacer" style="flex:1"></span>
+        <span id="stat">0 块</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 右：三问 + 复习 -->
+  <div class="wb-col wb-right">
+    <div class="col-k">STEP 2 · 动手</div>
+    <div class="col-h">三问</div>
+    <div id="askArea"></div>
+    <div style="border-top:1px solid var(--line);margin-top:20px;padding-top:16px">
+      <div class="col-k">隔天回来 · 复习</div>
+      <div id="reviewArea"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  'use strict';
+  var NS='http://www.w3.org/2000/svg';
+  var KEY='shiyue_workbench_v1';
+  var DAY=24*60*60*1000;
+
+  /* 教材帮 P001 原文，已在 set.html 确认过，一字不改 */
+  var MATERIALS=[
+    {id:'m1', text:'一般地，我们把研究对象统称为元素，把一些元素组成的总体叫做集合（简称为集）。', src:'P001 · 集合与元素的含义'},
+    {id:'m2', text:'我们通常用大写拉丁字母 A，B，C，… 表示集合，用小写拉丁字母 a，b，c，… 表示集合中的元素。', src:'P001 · 记法'},
+    {id:'m3', text:'如果 a 是集合 A 的元素，就说 a 属于集合 A，记作 a∈A。', src:'P001 · 属于'},
+    {id:'m4', text:'如果 a 不是集合 A 中的元素，就说 a 不属于集合 A，记作 a∉A。', src:'P001 · 不属于'},
+    {id:'m5', text:'确定性、互异性、无序性。', src:'P001 · 导图点名：元素的三个特性'},
+    {id:'m6', text:'自然语言、列举法、描述法、图示法。', src:'P001 · 导图点名：集合的表示方法'},
+    {id:'m7', text:'描述法是学习难点，使用频率高，需牢记。', src:'P001 · 书页手写批注'},
+    {id:'m8', text:'常用数集的表示（这一页正文没给具体记号）。', src:'P001 · 导图点名，正文未展开'}
+  ];
+
+  var state=load();
+  var sel=null;
+  var levelAns=null;
+
+  function load(){
+    try{var s=JSON.parse(localStorage.getItem(KEY));if(s&&s.nodes)return s;}catch(e){}
+    return {nodes:[]};
+  }
+  function save(){try{localStorage.setItem(KEY,JSON.stringify(state));}catch(e){}}
+  function byId(id){for(var i=0;i<state.nodes.length;i++)if(state.nodes[i].id===id)return state.nodes[i];return null;}
+
+  /* ---------- 左栏：原文卡 ---------- */
+  function renderMats(){
+    var box=document.getElementById('mats');box.innerHTML='';
+    MATERIALS.forEach(function(m){
+      var used=state.nodes.some(function(n){return n.mat===m.id;});
+      var d=document.createElement('div');
+      d.className='mat'+(used?' used':'');d.draggable=!used;d.dataset.mat=m.id;
+      d.innerHTML=m.text+'<span class="src">'+m.src+(used?' · 已拆':'')+'</span>';
+      if(!used)d.addEventListener('dragstart',function(e){e.dataTransfer.setData('text/plain',m.id);e.dataTransfer.effectAllowed='copy';});
+      box.appendChild(d);
+    });
+  }
+
+  /* ---------- 画布：拖放成节点 ---------- */
+  var canvas=document.getElementById('canvas');
+  canvas.addEventListener('dragover',function(e){e.preventDefault();e.dataTransfer.dropEffect='copy';});
+  canvas.addEventListener('drop',function(e){
+    e.preventDefault();
+    var mid=e.dataTransfer.getData('text/plain');
+    if(!mid)return;
+    var r=canvas.getBoundingClientRect();
+    var x=Math.max(60,Math.min(r.width-60,e.clientX-r.left));
+    var y=Math.max(40,Math.min(r.height-40,e.clientY-r.top));
+    var mat=MATERIALS.filter(function(m){return m.id===mid;})[0];
+    var n={id:'n'+Date.now()+Math.floor(Math.random()*100),mat:mid,raw:mat?mat.text:'',
+      name:'',relTo:'',why:'',level:'raw',createdAt:Date.now(),masteredAt:0,x:x,y:y};
+    state.nodes.push(n);save();renderAll();select(n.id);
+  });
+
+  /* 节点可再拖动改位置 */
+  function makeDraggable(el,n){
+    el.addEventListener('mousedown',function(e){
+      if(e.button!==0)return;
+      e.preventDefault();
+      var r=canvas.getBoundingClientRect();
+      function mv(ev){
+        n.x=Math.max(55,Math.min(r.width-55,ev.clientX-r.left));
+        n.y=Math.max(32,Math.min(r.height-32,ev.clientY-r.top));
+        el.style.left=n.x+'px';el.style.top=n.y+'px';drawEdges();
+      }
+      function up(){document.removeEventListener('mousemove',mv);document.removeEventListener('mouseup',up);save();}
+      document.addEventListener('mousemove',mv);document.addEventListener('mouseup',up);
+    });
+  }
+
+  /* ---------- 渲染节点 + 连线 ---------- */
+  function levelText(n){
+    return {raw:'没拆 · 待答',named:'已起名 · 待连',yellow:'只记名字',red:'理由没讲出',bright:'真懂了'}[n.level]||'';
+  }
+  function renderNodes(){
+    canvas.querySelectorAll('.node').forEach(function(e){e.remove();});
+    state.nodes.forEach(function(n){
+      var d=document.createElement('div');
+      d.className='node '+n.level+(sel===n.id?' sel':'');
+      d.style.left=n.x+'px';d.style.top=n.y+'px';
+      d.innerHTML='<div class="nm">'+(n.name||'（还没起名）')+'</div><div class="st">'+levelText(n)+'</div>';
+      d.addEventListener('click',function(e){e.stopPropagation();select(n.id);});
+      makeDraggable(d,n);
+      canvas.appendChild(d);
+    });
+    document.getElementById('hint').style.display=state.nodes.length?'none':'block';
+    document.getElementById('stat').textContent=state.nodes.length+' 块 · '+state.nodes.filter(function(n){return n.level==='bright';}).length+' 块真懂';
+  }
+  function drawEdges(){
+    var svg=document.getElementById('edges');svg.innerHTML='';
+    state.nodes.forEach(function(n){
+      if(!n.relTo)return;
+      var t=byId(n.relTo);if(!t)return;
+      var ln=document.createElementNS(NS,'line');
+      ln.setAttribute('x1',n.x);ln.setAttribute('y1',n.y);
+      ln.setAttribute('x2',t.x);ln.setAttribute('y2',t.y);
+      ln.setAttribute('stroke',n.why?'var(--green)':'var(--red)');
+      ln.setAttribute('stroke-width','1.5');
+      ln.setAttribute('stroke-dasharray',n.why?'none':'4 4');
+      svg.appendChild(ln);
+      if(n.why){
+        var tx=document.createElementNS(NS,'text');
+        tx.setAttribute('x',(n.x+t.x)/2);tx.setAttribute('y',(n.y+t.y)/2-6);
+        tx.setAttribute('text-anchor','middle');tx.setAttribute('font-size','10');
+        tx.setAttribute('fill','var(--ink-3)');tx.textContent=n.why.slice(0,10);
+        svg.appendChild(tx);
+      }
+    });
+  }
+  canvas.addEventListener('click',function(){sel=null;levelAns=null;renderAll();});
+
+  /* ---------- 三问面板 ---------- */
+  function select(id){sel=id;var n=byId(id);levelAns=n?(n.level==='bright'?'bright':n.level==='yellow'?'yellow':null):null;renderAll();}
+  function renderAsk(){
+    var box=document.getElementById('askArea');
+    var n=sel?byId(sel):null;
+    if(!n){
+      box.innerHTML='<div class="empty">点画布上的节点<br>或直接拖一块原文进来<br><br>每块都要过三问，<br>过了才算你的。</div>';return;
+    }
+    var opts='<option value="">先不连</option>';
+    state.nodes.forEach(function(o){if(o.id!==n.id)opts+='<option value="'+o.id+'"'+(n.relTo===o.id?' selected':'')+'>'+(o.name||'未命名')+'</option>';});
+    box.innerHTML=
+      '<div class="banner">原文：'+n.raw.slice(0,42)+(n.raw.length>42?'…':'')+'</div>'+
+      '<div class="qbox"><div class="qt">问 1 · 这块叫什么？</div>'+
+        '<div class="qh">用自己的话起个名字，别照抄原文。</div>'+
+        '<input type="text" id="qName" value="'+(n.name||'').replace(/"/g,'&quot;')+'" placeholder="例如：集合与元素的含义"></div>'+
+      '<div class="qbox"><div class="qt">问 2 · 跟谁有关？凭什么？</div>'+
+        '<div class="qh">选一个已有节点，再用一句话说清关系。说不出理由，这条线就是红的。</div>'+
+        '<select id="qRel">'+opts+'</select>'+
+        '<textarea id="qWhy" placeholder="例如：这条定义了元素和集合，是知道 a∈A 的前提" style="margin-top:8px">'+(''+n.why).replace(/</g,'&lt;')+'</textarea></div>'+
+      '<div class="qbox"><div class="qt">问 3 · 真懂，还是只记个名字？</div>'+
+        '<div class="qh">诚实选。选真懂就得讲出理由，讲不出我给你标红。</div>'+
+        '<div class="pick"><button type="button" data-v="bright" class="'+(levelAns==='bright'?'on':'')+'">真懂了</button>'+
+        '<button type="button" data-v="yellow" class="'+(levelAns==='yellow'?'on':'')+'">只记名字</button></div>'+
+        '<button class="savebtn" id="qSave" type="button">保存这一块</button>'+
+        '<button class="delbtn" id="qDel" type="button">删掉这一块</button></div>';
+
+    box.querySelectorAll('.pick button').forEach(function(b){
+      b.addEventListener('click',function(){
+        /* 重绘前先把已填内容存回节点，否则点「真懂」会清空前面填的名字和理由 */
+        var ni=document.getElementById('qName'), ri=document.getElementById('qRel'), wi=document.getElementById('qWhy');
+        if(ni) n.name=ni.value.trim();
+        if(ri) n.relTo=ri.value;
+        if(wi) n.why=wi.value.trim();
+        levelAns=(levelAns===b.dataset.v?null:b.dataset.v);
+        renderAsk();
+      });
+    });
+    document.getElementById('qSave').addEventListener('click',function(){
+      var name=document.getElementById('qName').value.trim();
+      var rel=document.getElementById('qRel').value;
+      var why=document.getElementById('qWhy').value.trim();
+      if(!name){alert('先给这块起个名字——说不出它叫什么，就是还没拆明白。');return;}
+      if(rel&&!why){alert('选了跟谁有关，就得讲出「凭什么」。讲不出，先回书里看看。');return;}
+      n.name=name;n.relTo=rel;n.why=why;
+      if(levelAns==='bright'&&rel&&!why){n.level='red';}
+      else if(levelAns==='bright'){n.level='bright';n.masteredAt=(n.masteredAt||Date.now());}
+      else if(levelAns==='yellow'){n.level='yellow';}
+      else{n.level='named';}
+      save();renderAll();
+    });
+    document.getElementById('qDel').addEventListener('click',function(){
+      state.nodes=state.nodes.filter(function(x){return x.id!==n.id;});
+      state.nodes.forEach(function(x){if(x.relTo===n.id)x.relTo='';});
+      sel=null;levelAns=null;save();renderAll();
+    });
+  }
+
+  /* ---------- 隔天复习 ---------- */
+  function renderReview(){
+    var box=document.getElementById('reviewArea');
+    var due=state.nodes.filter(function(n){return n.level==='bright'&&n.masteredAt&&Date.now()-n.masteredAt>=DAY;});
+    if(!due.length){box.innerHTML='<div class="empty" style="padding:16px 6px">今天没有要重讲的。<br>真懂的块，隔天会回到这里。</div>';return;}
+    box.innerHTML='';
+    due.forEach(function(n){
+      var d=document.createElement('div');d.className='review-item';
+      d.innerHTML='<b>'+n.name+'</b><br><span style="color:var(--ink-3)">隔天了，重讲一遍还讲得出吗？</span><br>'+
+        '<button type="button">重讲</button>';
+      d.querySelector('button').addEventListener('click',function(){
+        if(confirm('不看画布，用自己的话讲清「'+n.name+'」。\n\n讲得出来点确定，讲不出点取消（退回重建）。')){
+          n.masteredAt=Date.now();save();renderAll();
+        }else{
+          n.level='red';n.masteredAt=0;save();select(n.id);
+        }
+      });
+      box.appendChild(d);
+    });
+  }
+
+  function renderAll(){renderMats();renderNodes();drawEdges();renderAsk();renderReview();}
+
+  /* ---------- 顶栏按钮 ---------- */
+  document.getElementById('btnSim').addEventListener('click',function(){
+    var c=0;state.nodes.forEach(function(n){if(n.level==='bright'){n.masteredAt=Date.now()-DAY-1000;c++;}});
+    save();renderAll();alert(c?('已把 '+c+' 块真懂的节点设为「隔天」，右边出现了复习任务。'):'还没有真懂的节点，先点亮几块再模拟。');
+  });
+  document.getElementById('btnExport').addEventListener('click',function(){
+    var blob=new Blob([JSON.stringify(state,null,2)],{type:'application/json'});
+    var a=document.createElement('a');a.href=URL.createObjectURL(blob);
+    a.download='工作台数据_'+new Date().toISOString().slice(0,10)+'.json';a.click();
+    URL.revokeObjectURL(a.href);
+  });
+
+  renderAll();
+})();
+</script>
+</body>
+</html>

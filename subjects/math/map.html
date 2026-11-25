@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>集合 · 知识图谱 · 拾页</title>
+<script>try{var t=localStorage.getItem('shiyue_theme');if(t)document.documentElement.dataset.theme=t;}catch(e){}</script>
+<link rel="stylesheet" href="../../shared/blocks.css">
+<link rel="stylesheet" href="../../shared/graph.css">
+</head>
+<body class="graph-page">
+<script src="../../shared/nav.js"></script>
+
+<div class="graph-stage" id="graphStage">
+  <div class="graph-head">
+    <div class="k" id="gk">知识图谱</div>
+    <h1 id="gt">集合</h1>
+    <div class="u" id="gu">数学 · 必修一</div>
+    <div class="hint" id="ghint"></div>
+  </div>
+
+  <div class="graph-panel">
+    <div class="ph-k">自主学 · 学情</div>
+    <h2>这一章</h2>
+    <div class="stat" id="gp">0 / 0</div>
+    <div class="bar"><i id="gbar"></i></div>
+    <div class="tip">已掌握 / 总节点。有摘要的节点点了能看内容；「掌握」要等自测题填进来才统计。</div>
+    <button class="btn ghost" id="gWeak" type="button" style="width:100%;justify-content:center;margin-top:12px">精准找弱项</button>
+  </div>
+
+  <div class="graph-detail" id="gDetail">
+    <div class="dt" id="dTitle"></div>
+    <div class="dm" id="dMeta"></div>
+    <div class="dd" id="dDesc"></div>
+    <a class="btn" id="dLink" href="set.html">进入这一页 →</a>
+  </div>
+
+  <div class="graph-tools">
+    <span>一屏铺开 · 不用往下滑</span>
+    <button id="gFull" type="button">全屏看</button>
+  </div>
+</div>
+
+<script>
+/* 集合章：照讯飞截图的形状摆——中心主题，四周知识点，菱形是更细的分支。
+   教材帮 P001（1.1 集合的概念）已填：def / elem / feature / method / logic 五个节点有真摘要。
+   其余节点仍是占位，等书页拍到再填。坐标写在 1160x720 的画布里。 */
+window.GRAPH = {
+  kicker: '同步精准学 · 数学',
+  title: '集合',
+  unit: '数学 · 必修一 · 第一章',
+  mastered: 0,
+  total: 22,
+  nodes: [
+    {id:'root', x:560, y:370, r:30, kind:'big', label:'集合（主题）', page:'set.html',
+     desc:'第一章「集合与常用逻辑用语」的中心。已填第一页：1.1 集合的概念（教材帮 P001）。'},
+
+    {id:'def', x:420, y:250, r:16, kind:'circle', tag:'new', label:'集合的含义与表示', page:'set.html#concept-def',
+     desc:'已填：研究对象统称元素，元素组成的总体叫集合；大写 A B C 表集合，小写 a b c 表元素。'},
+    {id:'elem', x:250, y:170, r:15, kind:'circle', tag:'new', label:'元素与集合', page:'set.html#concept-relation',
+     desc:'已填：a 属于 A 记作 a∈A，不属于记作 a∉A，二者必居其一。'},
+    {id:'feature', x:250, y:300, r:15, kind:'circle', tag:'key', label:'元素的三个特性', page:'set.html#note-features',
+     desc:'已填（导图点名）：确定性、互异性、无序性。具体意思等教材下一页再补。'},
+    {id:'method', x:380, y:120, r:13, kind:'diamond', label:'集合的表示方法', page:'set.html#note-methods',
+     desc:'已填（导图点名）：自然语言、列举法、描述法、图示法。旁注说描述法是难点、使用频率高。'},
+
+    {id:'rel', x:700, y:300, r:17, kind:'circle', tag:'new', label:'集合与集合的关系', page:'set.html',
+     desc:'（占位）子集、真子集、相等。'},
+    {id:'subset', x:790, y:220, r:14, kind:'circle', label:'子集', page:'set.html',
+     desc:'（占位）A ⊆ B 是什么意思。'},
+    {id:'proper', x:820, y:370, r:13, kind:'diamond', label:'真子集', page:'set.html',
+     desc:'（占位）A ⊊ B，比子集多一个「不相等」。'},
+    {id:'equal', x:640, y:250, r:13, kind:'diamond', label:'集合相等', page:'set.html',
+     desc:'（占位）两边互相包含就相等。'},
+    {id:'empty', x:1000, y:400, r:13, kind:'diamond', label:'空集', page:'set.html',
+     desc:'（占位）不含任何元素的集合，记 ∅。'},
+
+    {id:'op', x:640, y:470, r:17, kind:'circle', tag:'new', label:'集合的运算', page:'set.html',
+     desc:'（占位）交、并、补三种运算。'},
+    {id:'inter', x:500, y:560, r:15, kind:'circle', tag:'test', label:'交集 A ∩ B', page:'set.html',
+     desc:'（占位）两个集合共有的元素。'},
+    {id:'union', x:660, y:610, r:15, kind:'circle', label:'并集 A ∪ B', page:'set.html',
+     desc:'（占位）两个集合合起来的元素。'},
+    {id:'comp', x:820, y:560, r:15, kind:'circle', tag:'test', label:'补集 ∁ᵤA', page:'set.html',
+     desc:'（占位）在全集里但不在 A 里的元素。'},
+    {id:'venn', x:960, y:470, r:13, kind:'diamond', label:'Venn 图', page:'set.html',
+     desc:'（占位）用图看交并补。'},
+
+    {id:'adv', x:380, y:470, r:15, kind:'circle', tag:'key', label:'集合里的参数问题', page:'set.html',
+     desc:'（占位）给一个条件，求参数范围。'},
+    {id:'ineq', x:200, y:470, r:13, kind:'diamond', label:'一元二次不等式与集合', page:'set.html',
+     desc:'（占位）解集用集合表示。'},
+    {id:'interval', x:210, y:600, r:13, kind:'diamond', label:'集合的区间表示', page:'set.html',
+     desc:'（占位）(a,b)、[a,b] 这些写法。'},
+    {id:'param', x:520, y:660, r:13, kind:'diamond', label:'含参数的集合运算', page:'set.html',
+     desc:'（占位）运算结果带参数时怎么讨论。'},
+
+    {id:'count', x:1030, y:600, r:12, kind:'diamond', label:'子集个数 2ⁿ', page:'set.html',
+     desc:'（占位）有 n 个元素就有 2ⁿ 个子集。'},
+    {id:'app', x:860, y:660, r:12, kind:'diamond', label:'集合的实际应用', page:'set.html',
+     desc:'（占位）用集合整理分类问题。'},
+    {id:'logic', x:120, y:290, r:12, kind:'diamond', label:'常用数集记号', page:'set.html#note-number-sets',
+     desc:'已填（导图点名）：这页只写了「常用数集的表示」，没给具体记号，等拍到 N Z Q R 那页按原文补。'}
+  ],
+  edges: [
+    ['root','def'],['root','rel'],['root','op'],['root','adv'],
+    ['def','elem'],['def','feature'],['def','method'],
+    ['rel','subset'],['rel','proper'],['rel','equal'],['rel','empty'],
+    ['op','inter'],['op','union'],['op','comp'],['op','venn'],
+    ['adv','ineq'],['adv','interval'],['adv','param'],
+    ['comp','count'],['union','app'],['elem','logic']
+  ]
+};
+</script>
+<script src="../../shared/graph.js"></script>
+</body>
+</html>

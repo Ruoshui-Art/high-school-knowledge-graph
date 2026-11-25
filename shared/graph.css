@@ -1,0 +1,85 @@
+/* 拾页 · 知识图谱。一屏铺开，不竖滑。吃 blocks.css 同一套主题变量。 */
+:root{
+  --gnode-fill:#fbf9f4; --gnode-stroke:rgba(32,33,31,.22);
+  --gnode-core:#2f4a44; --gedge:rgba(32,33,31,.18);
+  --gsub:#5c5e57; --gpanel:rgba(251,249,244,.96);
+}
+html[data-theme="night"]{
+  --gnode-fill:rgba(255,255,255,.07); --gnode-stroke:rgba(170,200,235,.38);
+  --gnode-core:#8fb3a6; --gedge:rgba(160,190,230,.24);
+  --gsub:#b4b3a9; --gpanel:rgba(26,34,50,.96);
+}
+
+/* 满屏，不滚动 */
+body.graph-page{height:100vh;overflow:hidden;display:flex;flex-direction:column}
+.graph-stage{position:relative;flex:1;min-height:0;background:var(--paper)}
+html[data-theme="night"] .graph-stage{background:linear-gradient(160deg,#111b2c 0%,#0c1320 100%)}
+.graph-svg{width:100%;height:100%;display:block}
+
+/* 便利贴：章节条 */
+.graph-head{position:absolute;left:24px;top:18px;z-index:3;pointer-events:none}
+.graph-head .k{font-family:var(--serif);font-size:12px;letter-spacing:.18em;color:var(--accent)}
+.graph-head h1{font-family:var(--serif);font-size:26px;letter-spacing:.08em;margin-top:4px;color:var(--ink)}
+.graph-head .u{font-size:12px;color:var(--gsub);margin-top:4px}
+.graph-head .hint{font-size:11px;color:var(--ink-3);margin-top:8px}
+
+/* 连线 */
+.graph-edge{stroke:var(--gedge);stroke-width:1.3;fill:none}
+.graph-edge.hi{stroke:var(--accent);stroke-width:2}
+
+/* 节点 */
+.gnode{cursor:pointer}
+.gnode .halo{fill:var(--gnode-fill);stroke:var(--gnode-stroke);stroke-width:1.2;transition:stroke .15s,stroke-width .15s}
+.gnode:hover .halo,.gnode.sel .halo{stroke:var(--accent);stroke-width:2.4}
+.gnode .core{fill:var(--gnode-core);transition:fill .15s}
+.gnode.sel .core{fill:var(--accent)}
+.gnode .label{font-family:var(--sans);font-size:12.5px;fill:var(--gsub);text-anchor:middle;pointer-events:none}
+.gnode:hover .label,.gnode.sel .label{fill:var(--ink);font-weight:600}
+.gnode.big .label{font-size:15px;fill:var(--ink);font-weight:600}
+.gnode.big .halo{stroke-width:1.6}
+
+/* 类型小标签：新学 / Test / 要点 */
+.gtag rect{rx:2}
+.gtag text{font-family:var(--sans);font-size:9.5px;fill:#fff;text-anchor:middle;pointer-events:none;letter-spacing:.04em}
+.gtag.new rect{fill:#3f7a5f}
+.gtag.test rect{fill:#2f6fa3}
+.gtag.key rect{fill:#b4442e}
+
+/* 右侧学情卡 */
+.graph-panel{position:absolute;right:22px;top:18px;width:224px;z-index:3;background:var(--gpanel);
+  border:1px solid var(--line);padding:16px 18px 18px;box-shadow:0 8px 24px rgba(0,0,0,.06)}
+.graph-panel .ph-k{font-size:11px;letter-spacing:.14em;color:var(--accent)}
+.graph-panel h2{font-family:var(--serif);font-size:18px;letter-spacing:.06em;margin:6px 0 12px;color:var(--ink)}
+.graph-panel .stat{font-family:var(--serif);font-size:24px;color:var(--accent)}
+.graph-panel .stat span{font-size:13px;color:var(--gsub);font-family:var(--sans)}
+.graph-panel .bar{height:5px;background:var(--line-2);margin:10px 0 12px;border-radius:3px;overflow:hidden}
+.graph-panel .bar i{display:block;height:100%;width:0;background:var(--accent-2);transition:width .3s}
+.graph-panel .tip{font-size:11px;color:var(--ink-3);line-height:1.7}
+
+/* 节点详情卡（点节点后显示） */
+.graph-detail{position:absolute;left:24px;bottom:22px;width:300px;z-index:3;background:var(--gpanel);
+  border:1px solid var(--line);border-left:3px solid var(--accent);padding:14px 18px;
+  box-shadow:0 8px 24px rgba(0,0,0,.06);display:none}
+.graph-detail.on{display:block}
+.graph-detail .dt{font-family:var(--serif);font-size:17px;color:var(--ink);margin-bottom:4px}
+.graph-detail .dm{font-size:11px;color:var(--ink-3);margin-bottom:10px}
+.graph-detail .dd{font-size:12px;color:var(--gsub);line-height:1.7;margin-bottom:12px}
+.graph-detail a.btn{font-size:12px;padding:7px 12px;text-decoration:none;display:inline-block}
+
+/* 底部工具条 */
+.graph-tools{position:absolute;right:22px;bottom:22px;z-index:3;display:flex;gap:10px;align-items:center;
+  font-size:11px;color:var(--ink-3)}
+.graph-tools button{cursor:pointer;border:1px solid var(--line);background:var(--gpanel);color:var(--gsub);
+  padding:6px 12px;font-size:11px;letter-spacing:.06em;border-radius:2px}
+.graph-tools button:hover{border-color:var(--accent);color:var(--accent)}
+
+@media(max-width:760px){
+  .graph-head{left:14px;top:10px}.graph-head h1{font-size:20px}
+  .graph-head .hint,.graph-head .u{display:none}
+  .graph-panel{right:10px;top:10px;width:156px;padding:10px 12px}
+  .graph-panel h2{font-size:14px;margin:4px 0 8px}
+  .graph-panel .stat{font-size:18px}
+  .graph-panel .tip{display:none}
+  .graph-detail{left:10px;bottom:12px;width:calc(100% - 20px)}
+  .graph-tools{right:10px;bottom:auto;top:104px}
+}

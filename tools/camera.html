@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>拍照录入 · 高中知识点网站</title>
+<style>
+  :root{--bg:#0f1115;--panel:#191c22;--line:#2a2f38;--txt:#e8eaed;--sub:#9aa0a6;--accent:#4c8bf5;--warn:#f0a04b}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--txt);font:15px/1.6 -apple-system,"Segoe UI","Microsoft YaHei",sans-serif;padding:24px;max-width:980px;margin:auto}
+  h1{font-size:22px;margin:0 0 4px}
+  .sub{color:var(--sub);font-size:13px}
+  .bar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:18px 0}
+  button{padding:9px 16px;border:1px solid var(--line);border-radius:8px;background:var(--panel);color:var(--txt);cursor:pointer;font-size:14px}
+  button:hover{border-color:var(--accent)}
+  button:disabled{opacity:.45;cursor:not-allowed}
+  button.primary{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+  select{padding:8px 10px;border-radius:8px;background:var(--panel);color:var(--txt);border:1px solid var(--line);max-width:260px}
+  .stage{position:relative;background:#000;border-radius:12px;overflow:hidden;aspect-ratio:4/3}
+  video{width:100%;height:100%;object-fit:contain;display:block;background:#000}
+  .msg{padding:10px 14px;border-radius:8px;margin:12px 0;font-size:14px}
+  .msg.err{background:#3a1e1e;color:#ffb4b4}
+  .msg.ok{background:#163024;color:#9ee6bd}
+  .hint{background:#2a2317;color:var(--warn);border-radius:8px;padding:10px 14px;font-size:13px;margin:12px 0}
+  .count{font-size:52px;font-weight:800;color:var(--accent);text-align:center;line-height:1.2;margin:6px 0}
+  h2{font-size:16px;margin:26px 0 8px}
+  .shots{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+  .shot{border:1px solid var(--line);border-radius:8px;overflow:hidden;background:var(--panel);cursor:zoom-in}
+  .shot img{width:100%;aspect-ratio:4/3;object-fit:cover;display:block}
+  .shot .cap{font-size:11px;color:var(--sub);padding:5px 7px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .lightbox{display:none;position:fixed;inset:0;background:#000d;z-index:9;align-items:center;justify-content:center;padding:30px}
+  .lightbox.on{display:flex}
+  .lightbox img{max-width:100%;max-height:90vh;border-radius:8px}
+  code{background:var(--panel);padding:2px 5px;border-radius:4px;font-size:12px}
+</style>
+</head>
+<body>
+  <h1>拍照录入</h1>
+  <div class="sub">对着参考书拍一张，照片存到本地文件夹，我就能读到上面的题目。</div>
+
+  <div class="hint">
+    第一次用会弹一个摄像头授权框，点<b>「允许」</b>。这只是网页要拍一张照片，不会录像、不会上传，照片只存在你自己电脑上。
+  </div>
+
+  <div class="bar">
+    <select id="cam" title="选摄像头"><option>正在找摄像头…</option></select>
+    <button id="btnSwitch">切换摄像头</button>
+  </div>
+
+  <div class="stage">
+    <video id="vid" autoplay playsinline muted></video>
+  </div>
+
+  <div class="hint" style="background:#152a3a;color:#9fd0ff">
+    手要扶着书？用<b>空格键</b>或下面的<b>「3 秒后连拍」</b>：点完/按完你有 3 秒用两只手把书摆正，时间到自动连拍 3 张，挑最清楚的用。
+  </div>
+
+  <div class="bar">
+    <button class="primary" id="btnShoot" disabled>拍一张</button>
+    <button id="btnBurst" disabled>3 秒后连拍 3 张（空格键也行）</button>
+    <span class="sub" id="status">正在打开摄像头…</span>
+  </div>
+  <div class="count" id="count"></div>
+  <div id="msg"></div>
+
+  <h2>刚拍的照片 <span class="sub" id="cnt"></span></h2>
+  <div class="shots" id="shots"></div>
+
+  <div class="lightbox" id="lightbox"><img id="bigimg" alt="大图"></div>
+
+<script>
+const $ = id => document.getElementById(id);
+const vid = $('vid');
+let stream = null, camIdx = 0, devices = [];
+
+function say(text, kind){
+  const box = $('msg');
+  box.innerHTML = text ? `<div class="msg ${kind||''}">${text}</div>` : '';
+}
+
+async function listCams(){
+  const all = await navigator.mediaDevices.enumerateDevices();
+  devices = all.filter(d => d.kind === 'videoinput');
+  const sel = $('cam');
+  sel.innerHTML = '';
+  if(!devices.length){ sel.innerHTML = '<option>没找到摄像头</option>'; return; }
+  devices.forEach((d,i) => {
+    const o = document.createElement('option');
+    o.value = i;
+    o.textContent = d.label || ('摄像头 ' + (i+1));
+    sel.appendChild(o);
+  });
+  if(camIdx >= devices.length) camIdx = 0;
+  sel.value = camIdx;
+}
+
+async function openCam(){
+  if(stream){ stream.getTracks().forEach(t=>t.stop()); stream=null; }
+  if(!devices.length){ say('没找到摄像头，先插上或检查设备。','err'); return; }
+  try{
+    stream = await navigator.mediaDevices.getUserMedia({
+      video:{deviceId: devices[camIdx].deviceId ? {exact:devices[camIdx].deviceId} : undefined, width:{ideal:1280}, height:{ideal:960}},
+      audio:false
+    });
+    vid.srcObject = stream;
+    await vid.play();
+    $('btnShoot').disabled = false;
+    $('btnBurst').disabled = false;
+    $('status').textContent = '画面好了，可以对着书拍了';
+    say('');
+    await listCams(); // 授权后 label 才出来
+    $('cam').value = camIdx;
+  }catch(e){
+    $('status').textContent = '摄像头没打开';
+    say('打不开摄像头：' + (e.name==='NotAllowedError' ? '你刚才点了「拒绝」，请在地址栏摄像头图标里改成允许，再点切换。' : e.message), 'err');
+  }
+}
+
+$('btnSwitch').addEventListener('click', async () => {
+  const v = parseInt($('cam').value || '0', 10);
+  if(v !== camIdx){ camIdx = v; }
+  else { camIdx = (camIdx + 1) % devices.length; }
+  await openCam();
+});
+$('cam').addEventListener('change', async e => { camIdx = parseInt(e.target.value,10); await openCam(); });
+
+let busy = false;
+
+async function grab(label){
+  const c = document.createElement('canvas');
+  const w = vid.videoWidth, h = vid.videoHeight;
+  if(!w || !h) throw new Error('画面还没出来');
+  c.width = w; c.height = h;
+  c.getContext('2d').drawImage(vid, 0, 0, w, h);
+  const data = c.toDataURL('image/jpeg', 0.92);
+  const r = await fetch('/api/shoot', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({data, label})});
+  const j = await r.json();
+  if(!j.ok) throw new Error(j.error || '保存失败');
+  return j.name;
+}
+
+$('btnShoot').addEventListener('click', async () => {
+  if(busy) return;
+  busy = true;
+  try{
+    $('status').textContent = '正在保存…';
+    const name = await grab('');
+    say(`拍好了：<code>${name}</code>　→　存到 <code>录入照片</code> 文件夹`, 'ok');
+    $('status').textContent = '拍好了，可以翻页拍下一张';
+    await loadShots();
+  }catch(e){
+    say('拍照失败：' + e.message, 'err');
+    $('status').textContent = '再试一次';
+  }finally{ busy = false; }
+});
+
+function sleep(ms){ return new Promise(r => setTimeout(r, ms)); }
+
+async function burst(){
+  if(busy) return;
+  busy = true;
+  $('btnShoot').disabled = true; $('btnBurst').disabled = true;
+  try{
+    // 3 秒倒计时，手腾出来摆书
+    for(let n = 3; n >= 1; n--){
+      $('count').textContent = n;
+      await sleep(1000);
+    }
+    $('count').textContent = '拍！';
+    const names = [];
+    for(let i = 1; i <= 3; i++){
+      names.push(await grab('第' + i + '张'));
+      if(i < 3) await sleep(400); // 连拍间隔
+    }
+    $('count').textContent = '';
+    say(`连拍 3 张存好了：<code>${names.join('、')}</code>。点下面的图看哪张最清楚，告诉我读哪张。`, 'ok');
+    $('status').textContent = '连拍完成';
+    await loadShots();
+  }catch(e){
+    $('count').textContent = '';
+    say('连拍失败：' + e.message, 'err');
+    $('status').textContent = '再试一次';
+  }finally{
+    busy = false;
+    $('btnShoot').disabled = false; $('btnBurst').disabled = false;
+  }
+}
+
+$('btnBurst').addEventListener('click', burst);
+// 空格键触发连拍（在输入框/下拉框里时不抢键）
+document.addEventListener('keydown', e => {
+  if(e.code !== 'Space') return;
+  const t = e.target;
+  if(t && (t.tagName === 'INPUT' || t.tagName === 'SELECT' || t.tagName === 'TEXTAREA')) return;
+  e.preventDefault();
+  burst();
+});
+
+async function loadShots(){
+  try{
+    const j = await (await fetch('/api/list')).json();
+    $('cnt').textContent = j.ok ? `（共 ${j.items.length} 张，最多显示 30 张）` : '';
+    $('shots').innerHTML = (j.items||[]).map(it => `
+      <div class="shot" data-src="${it.thumb}">
+        <img src="${it.thumb}" alt="照片">
+        <div class="cap">${it.name.replace('题目_','')}</div>
+      </div>`).join('');
+    $('shots').querySelectorAll('.shot').forEach(el => {
+      el.addEventListener('click', () => { $('bigimg').src = el.dataset.src; $('lightbox').classList.add('on'); });
+    });
+  }catch(e){}
+}
+$('lightbox').addEventListener('click', () => $('lightbox').classList.remove('on'));
+
+(async () => {
+  try{
+    await listCams();
+    if(devices.length){ await openCam(); }
+    else { $('status').textContent = '没找到摄像头'; }
+    await loadShots();
+    const p = await (await fetch('/api/ping')).json();
+    if(!p.ok) say('后端没连上，刷新页面试试。','err');
+  }catch(e){
+    $('status').textContent = '出错了';
+    say('初始化失败：' + e.message + '。如果地址不是 127.0.0.1，浏览器不给用摄像头。','err');
+  }
+})();
+</script>
+</body>
+</html>
